@@ -1,7 +1,6 @@
 import * as XLSX from 'xlsx'
 import { localTime } from './dates'
-import { db, getActiveList, getSetting, mealLabel, RESULT_LABEL, setSetting, type Meal, type Scan } from './db'
-import type { LogPdfInfo } from './logPdf'
+import { db, getSetting, listForDay, mealLabel, RESULT_LABEL, setSetting, type Meal, type Scan } from './db'
 
 function scanRows(scans: Scan[]) {
   return scans.map(s => ({
@@ -24,12 +23,21 @@ function sheetOf(scans: Scan[]) {
   })
 }
 
-/** Downloads the scans as a PDF report into the browser's Downloads folder. */
-export async function downloadPdf(scans: Scan[], fileName: string, info: Omit<LogPdfInfo, 'property'>): Promise<void> {
+/**
+ * Downloads the day's attendance as a PDF: every guest on that day's uploaded list, with the time
+ * they were let in for each meal (or "Not scanned"), then any tags that weren't on the list.
+ */
+export async function downloadPdf(day: string, meals: Meal[], fileName: string): Promise<void> {
   // Loaded only when exporting, so the PDF library doesn't slow down the scan screen.
   const { buildLogPdf } = await import('./logPdf')
-  const property = (await getActiveList())?.property
-  buildLogPdf(scans, { ...info, property }).save(fileName)
+  const source = await listForDay(day)
+  buildLogPdf({
+    day,
+    meals,
+    list: source?.list ?? null,
+    guests: source?.guests ?? [],
+    scans: await scansFor(day),
+  }).save(fileName)
 }
 
 export async function scansFor(day: string, meal?: Meal): Promise<Scan[]> {
@@ -47,7 +55,7 @@ export async function autoExportMeal(day: string, meal: Meal): Promise<void> {
   const doneKey = `autoExported:${day}:${meal}`
   if (scans.length === 0 || (await getSetting<number>(doneKey)) === scans.length) return
   if ((await folderStatus()) === 'granted') await writeDayLog(day)
-  else await downloadPdf(scans, `meal-log-${day}-${meal}.pdf`, { day, meal })
+  else await downloadPdf(day, [meal], `meal-log-${day}-${meal}.pdf`)
   await setSetting(doneKey, scans.length)
 }
 

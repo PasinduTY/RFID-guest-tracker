@@ -17,7 +17,10 @@ scan log are stored in the browser's IndexedDB on the entrance laptop.
   The app listens on the whole page, so focus doesn't matter, and ignores keys typed slower than
   `SCAN_KEY_GAP_MS` (100 ms) apart, i.e. a person typing. A guest scanned twice for the same meal
   on the same day shows **Already scanned**; it is not blocked.
-- **Log** – filter by day, meal and result, and export to PDF.
+- **Log** – filter by day, meal and result. **Export to PDF** gives the day's attendance laid out
+  like the uploaded list (Rez #, Unit #, Client Name, Occ(s), Qty) with a Lunch and/or Dinner
+  column: the time each guest was let in, or "Not scanned". Tags that weren't on the list follow
+  in a separate table. Every imported list is kept, so past days can still be exported.
 
 ### Keeping the log safe
 

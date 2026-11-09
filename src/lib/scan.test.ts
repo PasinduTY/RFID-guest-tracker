@@ -56,7 +56,7 @@ describe('recordScan', () => {
     )
     expect((await recordScan('2026105521', 'lunch', newer)).result).toBe('denied')
     expect((await recordScan('2026100000', 'lunch', newer)).result).toBe('granted')
-    expect(await db.guests.count()).toBe(1)
+    expect(await db.guests.where('listId').equals(newer).count()).toBe(1)
   })
 })
 

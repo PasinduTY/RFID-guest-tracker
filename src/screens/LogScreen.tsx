@@ -28,13 +28,9 @@ export function LogScreen() {
     .filter(s => (meal === 'all' || s.meal === meal) && (result === 'all' || s.result === result))
     .reverse()
 
-  function exportShown() {
-    const parts = [day, meal === 'all' ? '' : meal, result === 'all' ? '' : result].filter(Boolean)
-    downloadPdf([...shown].reverse(), `meal-log-${parts.join('-')}.pdf`, {
-      day,
-      meal: meal === 'all' ? undefined : meal,
-      result: result === 'all' ? undefined : result,
-    })
+  // The PDF lists every guest on the day's uploaded list, so only the date and meal filters apply to it.
+  function exportReport() {
+    downloadPdf(day, meal === 'all' ? MEALS : [meal], `meal-log-${day}${meal === 'all' ? '' : `-${meal}`}.pdf`)
   }
 
   return (
@@ -53,7 +49,7 @@ export function LogScreen() {
           <option value="all">All results</option>
           {RESULTS.map(r => <option key={r} value={r}>{RESULT_LABEL[r]}</option>)}
         </select>
-        <button className="push-right" onClick={exportShown} disabled={shown.length === 0}>
+        <button className="push-right" onClick={exportReport}>
           Export to PDF
         </button>
       </div>

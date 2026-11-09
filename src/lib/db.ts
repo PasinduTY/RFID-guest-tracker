@@ -82,13 +82,23 @@ export async function getActiveList(): Promise<GuestList | undefined> {
   return id === undefined ? undefined : db.lists.get(id)
 }
 
-/** Saves a checked report as the active list. Older lists keep their header row; their guests are removed. */
+/** Saves a checked report as the active list. Older lists are kept so past days can still be reported on. */
 export async function saveList(list: Omit<GuestList, 'id'>, guests: ReportGuest[]): Promise<number> {
   return db.transaction('rw', db.lists, db.guests, db.settings, async () => {
     const listId = await db.lists.add(list as GuestList)
-    await db.guests.where('listId').notEqual(listId).delete()
     await db.guests.bulkAdd(guests.map(g => ({ ...g, listId }) as Guest))
     await setSetting('activeListId', listId)
     return listId
   })
+}
+
+/**
+ * The guest list a day's scans were checked against: the newest list used that day
+ * (a corrected report may have been loaded mid-day), or the active list when nobody was scanned yet.
+ */
+export async function listForDay(day: string): Promise<{ list: GuestList; guests: Guest[] } | null> {
+  const usedIds = (await db.scans.where('mealDate').equals(day).toArray()).map(s => s.listId)
+  const list = usedIds.length ? await db.lists.get(Math.max(...usedIds)) : await getActiveList()
+  if (!list) return null
+  return { list, guests: await db.guests.where('listId').equals(list.id).sortBy('id') }
 }

@@ -1,36 +1,63 @@
 import { describe, expect, it } from 'vitest'
-import type { Scan } from './db'
+import type { Guest, GuestList, Scan } from './db'
 import { buildLogPdf } from './logPdf'
 
-const scan = (i: number, result: Scan['result']): Scan => ({
-  id: i,
-  scannedAt: new Date(2026, 10, 9, 12, i % 60).toISOString(),
-  mealDate: '2026-11-09',
-  meal: i % 2 ? 'lunch' : 'dinner',
-  raw: String(2026105000 + i),
-  rezNo: String(2026105000 + i),
-  result,
-  listId: 1,
-  clientName: result === 'denied' ? '' : `GUEST, Number ${i}`,
-  unitNo: result === 'denied' ? '' : `NV-${200 + i}`,
-  occupants: result === 'denied' ? null : 1,
+const list: GuestList = {
+  id: 1,
+  fileName: 'document (17).xlsx',
+  importedAt: '',
+  property: 'Black Rock Tourist Park',
+  dateFrom: '2026-11-09',
+  dateTo: '2026-11-09',
+  generatedAt: '09-Nov-26 04:12 PM',
+  guestCount: 3,
+  totalOccupants: 3,
+}
+
+const guest = (id: number, rezNo: string, clientName: string): Guest => ({
+  id, listId: 1, rezNo, clientName, unitNo: `NV-${200 + id}`, occupants: 1, qty: 7,
+})
+const guests = [guest(1, '2026105521', 'ADOMS, Zachary'), guest(2, '2026105519', 'BALA, David'), guest(3, '2026105532', 'BIRD, Brian')]
+
+const scan = (id: number, rezNo: string, meal: Scan['meal'], result: Scan['result'], minute: number): Scan => ({
+  id, rezNo, meal, result, raw: rezNo, listId: 1, mealDate: '2026-11-09',
+  scannedAt: new Date(2026, 10, 9, meal === 'lunch' ? 12 : 19, minute).toISOString(),
+  clientName: '', unitNo: '', occupants: null,
 })
 
-describe('buildLogPdf', () => {
-  it('lays out a multi-page A4 log with every scan', () => {
-    const scans = Array.from({ length: 120 }, (_, i) => scan(i, i % 10 === 0 ? 'denied' : i % 7 === 0 ? 'repeat' : 'granted'))
-    const doc = buildLogPdf(scans, { day: '2026-11-09', property: 'Black Rock Tourist Park' })
+/** Text drawn on the pages (jsPDF writes it uncompressed). */
+const pdfText = (doc: ReturnType<typeof buildLogPdf>) => doc.output()
 
-    expect(doc.getNumberOfPages()).toBeGreaterThan(1)
-    const text = doc.output()
-    expect(text.startsWith('%PDF')).toBe(true)
-    expect(text).toContain('Meal access log')
-    expect(text).toContain('GUEST, Number 119')
+describe('buildLogPdf', () => {
+  it('lists every uploaded guest with their scan time or "Not scanned"', () => {
+    const scans = [
+      scan(1, '2026105521', 'lunch', 'granted', 10),
+      scan(2, '2026105521', 'lunch', 'repeat', 30),
+      scan(3, '2026199999', 'lunch', 'denied', 31),
+      scan(4, '2026105519', 'dinner', 'granted', 5),
+    ]
+    const text = pdfText(buildLogPdf({ day: '2026-11-09', meals: ['lunch', 'dinner'], list, guests, scans }))
+
+    for (const g of guests) expect(text).toContain(g.clientName)
+    expect(text).toContain('+1 repeat') // PDF escapes the brackets around it
+    expect(text).toContain('Not scanned')
+    expect(text).toContain('Lunch: 1 of 3 guests scanned')
+    expect(text).toContain('Dinner: 1 of 3 guests scanned')
+    expect(text).toContain('Scans not on the guest list')
+    expect(text).toContain('2026199999')
   })
 
-  it('still produces a page when there are no scans', () => {
-    const doc = buildLogPdf([], { day: '2026-11-09', meal: 'lunch' })
-    expect(doc.getNumberOfPages()).toBe(1)
-    expect(doc.output()).toContain('No scans.')
+  it('shows only the chosen meal column', () => {
+    const text = pdfText(buildLogPdf({ day: '2026-11-09', meals: ['dinner'], list, guests, scans: [] }))
+    expect(text).toContain('Dinner: 0 of 3 guests scanned')
+    expect(text).not.toContain('Lunch:')
+    expect(text).not.toContain('Scans not on the guest list')
+  })
+
+  it('runs onto more pages for a long list', () => {
+    const many = Array.from({ length: 120 }, (_, i) => guest(i + 1, String(2026105000 + i), `GUEST, Number ${i}`))
+    const doc = buildLogPdf({ day: '2026-11-09', meals: ['lunch', 'dinner'], list, guests: many, scans: [] })
+    expect(doc.getNumberOfPages()).toBeGreaterThan(1)
+    expect(pdfText(doc)).toContain('GUEST, Number 119')
   })
 })
