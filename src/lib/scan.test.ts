@@ -32,26 +32,26 @@ describe('recordScan', () => {
     const listId = await loadList()
     const at = (h: number, m: number) => new Date(2026, 10, 4, h, m)
 
-    const first = await recordScan('NV-214', 'lunch', listId, at(12, 42))
+    const first = await recordScan('NV-214', 'breakfast', listId, at(8, 42))
     expect(first.result).toBe('granted')
     expect(first.clientName).toBe('ADOMS, Zachary')
     expect(first.rezNo).toBe('2026105521')
 
     // Case and stray whitespace from the scanner don't matter.
-    const again = await recordScan(' nv-214\n', 'lunch', listId, at(12, 50))
+    const again = await recordScan(' nv-214\n', 'breakfast', listId, at(8, 50))
     expect(again.result).toBe('repeat')
     expect(again.firstScannedAt).toBe(first.scannedAt)
 
     expect((await recordScan('NV-214', 'dinner', listId, at(19, 5))).result).toBe('granted')
-    expect((await recordScan('NV-214', 'lunch', listId, new Date(2026, 10, 5, 12, 40))).result).toBe('granted')
+    expect((await recordScan('NV-214', 'breakfast', listId, new Date(2026, 10, 5, 8, 40))).result).toBe('granted')
 
-    const unknown = await recordScan('NV-999', 'lunch', listId, at(12, 51))
+    const unknown = await recordScan('NV-999', 'breakfast', listId, at(8, 51))
     expect(unknown.result).toBe('denied')
     expect(unknown.unitNo).toBe('NV-999')
     expect(unknown.rezNo).toBe('')
 
     // A Rez # is no longer what the tag carries.
-    expect((await recordScan('2026105519', 'lunch', listId, at(12, 52))).result).toBe('denied')
+    expect((await recordScan('2026105519', 'breakfast', listId, at(8, 52))).result).toBe('denied')
     expect(await db.scans.count()).toBe(6)
   })
 
@@ -61,8 +61,8 @@ describe('recordScan', () => {
       { fileName: 'b.xlsx', importedAt: '', property: null, dateFrom: null, dateTo: null, generatedAt: null, guestCount: 1, totalOccupants: 1 },
       [guest('2026100000', 'CK-191', 'NEW, Guest')],
     )
-    expect((await recordScan('NV-214', 'lunch', newer)).result).toBe('denied')
-    expect((await recordScan('CK-191', 'lunch', newer)).result).toBe('granted')
+    expect((await recordScan('NV-214', 'breakfast', newer)).result).toBe('denied')
+    expect((await recordScan('CK-191', 'breakfast', newer)).result).toBe('granted')
     expect(await db.guests.where('listId').equals(newer).count()).toBe(1)
   })
 })

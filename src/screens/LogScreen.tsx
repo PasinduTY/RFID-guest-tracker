@@ -42,7 +42,7 @@ export function LogScreen() {
           ))}
         </select>
         <select value={meal} onChange={e => setMeal(e.target.value as Meal | 'all')} aria-label="Meal">
-          <option value="all">Lunch and dinner</option>
+          <option value="all">Breakfast and dinner</option>
           {MEALS.map(m => <option key={m} value={m}>{MEAL_LABEL[m]}</option>)}
         </select>
         <select value={result} onChange={e => setResult(e.target.value as ScanResult | 'all')} aria-label="Result">

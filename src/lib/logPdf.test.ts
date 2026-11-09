@@ -21,7 +21,7 @@ const guests = [guest(1, '2026105521', 'ADOMS, Zachary'), guest(2, '2026105519',
 
 const scan = (id: number, rezNo: string, meal: Scan['meal'], result: Scan['result'], minute: number): Scan => ({
   id, rezNo, meal, result, raw: rezNo, listId: 1, mealDate: '2026-11-09',
-  scannedAt: new Date(2026, 10, 9, meal === 'lunch' ? 12 : 19, minute).toISOString(),
+  scannedAt: new Date(2026, 10, 9, meal === 'breakfast' ? 8 : 19, minute).toISOString(),
   clientName: '', unitNo: '', occupants: null,
 })
 
@@ -31,17 +31,17 @@ const pdfText = (doc: ReturnType<typeof buildLogPdf>) => doc.output()
 describe('buildLogPdf', () => {
   it('lists every uploaded guest with their scan time or "Not scanned"', () => {
     const scans = [
-      scan(1, '2026105521', 'lunch', 'granted', 10),
-      scan(2, '2026105521', 'lunch', 'repeat', 30),
-      scan(3, '2026199999', 'lunch', 'denied', 31),
+      scan(1, '2026105521', 'breakfast', 'granted', 10),
+      scan(2, '2026105521', 'breakfast', 'repeat', 30),
+      scan(3, '2026199999', 'breakfast', 'denied', 31),
       scan(4, '2026105519', 'dinner', 'granted', 5),
     ]
-    const text = pdfText(buildLogPdf({ day: '2026-11-09', meals: ['lunch', 'dinner'], list, guests, scans }))
+    const text = pdfText(buildLogPdf({ day: '2026-11-09', meals: ['breakfast', 'dinner'], list, guests, scans }))
 
     for (const g of guests) expect(text).toContain(g.clientName)
     expect(text).toContain('+1 repeat') // PDF escapes the brackets around it
     expect(text).toContain('Not scanned')
-    expect(text).toContain('Lunch: 1 of 3 guests scanned')
+    expect(text).toContain('Breakfast: 1 of 3 guests scanned')
     expect(text).toContain('Dinner: 1 of 3 guests scanned')
     expect(text).toContain('Scans not on the guest list')
     expect(text).toContain('2026199999')
@@ -50,13 +50,13 @@ describe('buildLogPdf', () => {
   it('shows only the chosen meal column', () => {
     const text = pdfText(buildLogPdf({ day: '2026-11-09', meals: ['dinner'], list, guests, scans: [] }))
     expect(text).toContain('Dinner: 0 of 3 guests scanned')
-    expect(text).not.toContain('Lunch:')
+    expect(text).not.toContain('Breakfast:')
     expect(text).not.toContain('Scans not on the guest list')
   })
 
   it('runs onto more pages for a long list', () => {
     const many = Array.from({ length: 120 }, (_, i) => guest(i + 1, String(2026105000 + i), `GUEST, Number ${i}`))
-    const doc = buildLogPdf({ day: '2026-11-09', meals: ['lunch', 'dinner'], list, guests: many, scans: [] })
+    const doc = buildLogPdf({ day: '2026-11-09', meals: ['breakfast', 'dinner'], list, guests: many, scans: [] })
     expect(doc.getNumberOfPages()).toBeGreaterThan(1)
     expect(pdfText(doc)).toContain('GUEST, Number 119')
   })

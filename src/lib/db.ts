@@ -1,13 +1,13 @@
 import Dexie, { type EntityTable } from 'dexie'
 import { unitKey, type ReportGuest } from './report'
 
-export type Meal = 'lunch' | 'dinner'
+export type Meal = 'breakfast' | 'dinner'
 export type ScanResult = 'granted' | 'denied' | 'repeat'
 
-export const MEALS: Meal[] = ['lunch', 'dinner']
-export const MEAL_LABEL: Record<Meal, string> = { lunch: 'Lunch', dinner: 'Dinner' }
+export const MEALS: Meal[] = ['breakfast', 'dinner']
+export const MEAL_LABEL: Record<Meal, string> = { breakfast: 'Breakfast', dinner: 'Dinner' }
 
-/** Label for a stored meal; scans saved before the meals changed may hold other values (e.g. "breakfast"). */
+/** Label for a stored meal; scans saved before the meals changed may hold other values (e.g. "lunch"). */
 export const mealLabel = (meal: string) => MEAL_LABEL[meal as Meal] ?? meal.charAt(0).toUpperCase() + meal.slice(1)
 
 export const isMeal = (value: unknown): value is Meal => MEALS.includes(value as Meal)

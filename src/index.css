@@ -154,7 +154,7 @@ tr:last-child td { border-bottom: 0; }
 .meal-switch { display: flex; border: 1px solid var(--border-strong); border-radius: var(--radius); overflow: hidden; }
 .meal { border: 0; border-radius: 0; padding: 12px 28px; font-size: 20px; color: var(--muted); background: var(--surface); }
 .meal.on { font-weight: 600; }
-.meal.on.lunch, .meal.on.lunch:hover { background: var(--warning-bg); color: var(--warning-text); }
+.meal.on.breakfast, .meal.on.breakfast:hover { background: var(--warning-bg); color: var(--warning-text); }
 .meal.on.dinner, .meal.on.dinner:hover { background: var(--dinner-bg); color: var(--dinner-text); }
 .counter { margin-left: auto; text-align: right; display: flex; flex-direction: column; }
 .counter-value { font-size: 28px; font-weight: 600; line-height: 1.1; }

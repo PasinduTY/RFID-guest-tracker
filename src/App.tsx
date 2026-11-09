@@ -22,7 +22,7 @@ export default function App() {
     return (id !== undefined && (await db.lists.get(id))) || null;
   });
   const storedMeal = useLiveQuery(() => getSetting<Meal>("meal"));
-  const meal: Meal = isMeal(storedMeal) ? storedMeal : "lunch";
+  const meal: Meal = isMeal(storedMeal) ? storedMeal : "breakfast";
 
   useEffect(() => {
     // Ask the browser not to clear this app's data when disk space runs low.

@@ -1,7 +1,7 @@
 # Meal access
 
 Checks restaurant guests at the entrance by their RFID tag. The guard loads the day's
-Rex "Full Meal Attendance Report", picks Lunch or Dinner, and scans tags: each scan shows
+Rex "Full Meal Attendance Report", picks Breakfast or Dinner, and scans tags: each scan shows
 **Granted**, **Already scanned** or **Denied** and is logged.
 
 Runs entirely in the browser (React + TypeScript + Vite). There is no backend: the guest list and
@@ -21,7 +21,7 @@ scan log are stored in the browser's IndexedDB on the entrance laptop.
   `SCAN_KEY_GAP_MS` (100 ms) apart, i.e. a person typing. A guest scanned twice for the same meal
   on the same day shows **Already scanned**; it is not blocked.
 - **Log** – filter by day, meal and result. **Export to PDF** gives the day's attendance laid out
-  like the uploaded list (Rez #, Unit #, Client Name, Occ(s), Qty) with a Lunch and/or Dinner
+  like the uploaded list (Rez #, Unit #, Client Name, Occ(s), Qty) with a Breakfast and/or Dinner
   column: the time each guest was let in, or "Not scanned". Tags that weren't on the list follow
   in a separate table. Every imported list is kept, so past days can still be exported.
 
