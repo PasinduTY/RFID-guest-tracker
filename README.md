@@ -17,14 +17,14 @@ scan log are stored in the browser's IndexedDB on the entrance laptop.
   The app listens on the whole page, so focus doesn't matter, and ignores keys typed slower than
   `SCAN_KEY_GAP_MS` (100 ms) apart, i.e. a person typing. A guest scanned twice for the same meal
   on the same day shows **Already scanned**; it is not blocked.
-- **Log** – filter by day, meal and result, and export to Excel.
+- **Log** – filter by day, meal and result, and export to PDF.
 
 ### Keeping the log safe
 
 Browser storage can be wiped by "clear browsing data", so the app also writes the log to disk:
 
 1. When the guard switches meal, the finished meal's scans are downloaded as
-   `meal-log-YYYY-MM-DD-<meal>.xlsx` (only if something changed since the last export).
+   `meal-log-YYYY-MM-DD-<meal>.pdf` (only if something changed since the last export).
 2. Optionally (Chrome/Edge), **Log → Choose folder** keeps `meal-log-YYYY-MM-DD.csv` in that folder
    up to date after every scan. After a browser restart the guard may need to click
    **Reconnect folder** once.
@@ -67,5 +67,6 @@ For the entrance laptop, open it full-screen, e.g. a shortcut to
 | `src/lib/db.ts` | IndexedDB tables: lists, guests, scans, settings (Dexie) |
 | `src/lib/scan.ts` | Granted / repeat / denied rule and logging |
 | `src/lib/scannerBuffer.ts`, `useScanner.ts` | Turns fast keystrokes + Enter into a scan |
-| `src/lib/exportLog.ts` | Excel export, auto-export on meal switch, log folder |
+| `src/lib/exportLog.ts` | PDF download, auto-export on meal switch, CSV log folder |
+| `src/lib/logPdf.ts` | Lays out the PDF log (jsPDF + jspdf-autotable) |
 | `src/screens/*` | Import, Scan and Log screens |

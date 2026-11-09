@@ -5,7 +5,7 @@ import { formatDay, localDate, localTime } from '../lib/dates'
 import { db, MEAL_LABEL, mealLabel, MEALS, RESULT_LABEL, type Meal, type ScanResult } from '../lib/db'
 import {
   chooseFolder,
-  downloadXlsx,
+  downloadPdf,
   folderName,
   folderStatus,
   reconnectFolder,
@@ -30,7 +30,11 @@ export function LogScreen() {
 
   function exportShown() {
     const parts = [day, meal === 'all' ? '' : meal, result === 'all' ? '' : result].filter(Boolean)
-    downloadXlsx([...shown].reverse(), `meal-log-${parts.join('-')}.xlsx`)
+    downloadPdf([...shown].reverse(), `meal-log-${parts.join('-')}.pdf`, {
+      day,
+      meal: meal === 'all' ? undefined : meal,
+      result: result === 'all' ? undefined : result,
+    })
   }
 
   return (
@@ -50,7 +54,7 @@ export function LogScreen() {
           {RESULTS.map(r => <option key={r} value={r}>{RESULT_LABEL[r]}</option>)}
         </select>
         <button className="push-right" onClick={exportShown} disabled={shown.length === 0}>
-          Export to Excel
+          Export to PDF
         </button>
       </div>
 
@@ -123,7 +127,7 @@ function LogFolder() {
     <div className="folder">
       <strong>Log folder</strong>
       {status === 'unsupported' && (
-        <span className="muted">This browser can't save to a folder. Use Chrome or Edge, or export to Excel after each meal.</span>
+        <span className="muted">This browser can't save to a folder. Use Chrome or Edge, or export to PDF after each meal.</span>
       )}
       {status === 'none' && (
         <>
