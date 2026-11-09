@@ -32,18 +32,18 @@ describe('recordScan', () => {
     const listId = await loadList()
     const at = (h: number, m: number) => new Date(2026, 10, 4, h, m)
 
-    const first = await recordScan('2026105521', 'breakfast', listId, at(7, 42))
+    const first = await recordScan('2026105521', 'lunch', listId, at(12, 42))
     expect(first.result).toBe('granted')
     expect(first.clientName).toBe('ADOMS, Zachary')
 
-    const again = await recordScan('2026105521\n', 'breakfast', listId, at(7, 50))
+    const again = await recordScan('2026105521\n', 'lunch', listId, at(12, 50))
     expect(again.result).toBe('repeat')
     expect(again.firstScannedAt).toBe(first.scannedAt)
 
-    expect((await recordScan('2026105521', 'lunch', listId, at(12, 5))).result).toBe('granted')
-    expect((await recordScan('2026105521', 'breakfast', listId, new Date(2026, 10, 5, 7, 40))).result).toBe('granted')
+    expect((await recordScan('2026105521', 'dinner', listId, at(19, 5))).result).toBe('granted')
+    expect((await recordScan('2026105521', 'lunch', listId, new Date(2026, 10, 5, 12, 40))).result).toBe('granted')
 
-    const unknown = await recordScan('2026199999', 'breakfast', listId, at(7, 51))
+    const unknown = await recordScan('2026199999', 'lunch', listId, at(12, 51))
     expect(unknown.result).toBe('denied')
     expect(await db.scans.count()).toBe(5)
   })

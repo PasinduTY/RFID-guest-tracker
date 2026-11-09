@@ -2,7 +2,7 @@ const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', '
 
 const pad = (n: number) => String(n).padStart(2, '0')
 
-/** Local calendar date as YYYY-MM-DD (never UTC, so 07:00 breakfast stays on the right day). */
+/** Local calendar date as YYYY-MM-DD (never UTC, so an early meal stays on the right day). */
 export function localDate(d: Date = new Date()): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }

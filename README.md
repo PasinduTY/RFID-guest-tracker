@@ -1,7 +1,7 @@
 # Meal access
 
 Checks restaurant guests at the entrance by their RFID tag. The guard loads the day's
-Rex "Full Meal Attendance Report", picks Breakfast or Lunch, and scans tags: each scan shows
+Rex "Full Meal Attendance Report", picks Lunch or Dinner, and scans tags: each scan shows
 **Granted**, **Already scanned** or **Denied** and is logged.
 
 Runs entirely in the browser (React + TypeScript + Vite). There is no backend: the guest list and

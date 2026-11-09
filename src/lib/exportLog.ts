@@ -1,12 +1,12 @@
 import * as XLSX from 'xlsx'
 import { localTime } from './dates'
-import { db, getSetting, MEAL_LABEL, RESULT_LABEL, setSetting, type Meal, type Scan } from './db'
+import { db, getSetting, mealLabel, RESULT_LABEL, setSetting, type Meal, type Scan } from './db'
 
 function scanRows(scans: Scan[]) {
   return scans.map(s => ({
     Date: s.mealDate,
     Time: localTime(s.scannedAt),
-    Meal: MEAL_LABEL[s.meal],
+    Meal: mealLabel(s.meal),
     'Rez #': s.rezNo,
     'Unit #': s.unitNo,
     'Client Name': s.clientName,

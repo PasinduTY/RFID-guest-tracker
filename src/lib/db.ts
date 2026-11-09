@@ -1,11 +1,16 @@
 import Dexie, { type EntityTable } from 'dexie'
 import type { ReportGuest } from './report'
 
-export type Meal = 'breakfast' | 'lunch'
+export type Meal = 'lunch' | 'dinner'
 export type ScanResult = 'granted' | 'denied' | 'repeat'
 
-export const MEALS: Meal[] = ['breakfast', 'lunch']
-export const MEAL_LABEL: Record<Meal, string> = { breakfast: 'Breakfast', lunch: 'Lunch' }
+export const MEALS: Meal[] = ['lunch', 'dinner']
+export const MEAL_LABEL: Record<Meal, string> = { lunch: 'Lunch', dinner: 'Dinner' }
+
+/** Label for a stored meal; scans saved before the meals changed may hold other values (e.g. "breakfast"). */
+export const mealLabel = (meal: string) => MEAL_LABEL[meal as Meal] ?? meal.charAt(0).toUpperCase() + meal.slice(1)
+
+export const isMeal = (value: unknown): value is Meal => MEALS.includes(value as Meal)
 export const RESULT_LABEL: Record<ScanResult, string> = { granted: 'Granted', denied: 'Denied', repeat: 'Repeat' }
 
 /** One imported report file. */

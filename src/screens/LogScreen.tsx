@@ -2,7 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useState } from 'react'
 import { ResultPill } from '../components/ResultPill'
 import { formatDay, localDate, localTime } from '../lib/dates'
-import { db, MEAL_LABEL, MEALS, RESULT_LABEL, type Meal, type ScanResult } from '../lib/db'
+import { db, MEAL_LABEL, mealLabel, MEALS, RESULT_LABEL, type Meal, type ScanResult } from '../lib/db'
 import {
   chooseFolder,
   downloadXlsx,
@@ -42,7 +42,7 @@ export function LogScreen() {
           ))}
         </select>
         <select value={meal} onChange={e => setMeal(e.target.value as Meal | 'all')} aria-label="Meal">
-          <option value="all">Breakfast and lunch</option>
+          <option value="all">Lunch and dinner</option>
           {MEALS.map(m => <option key={m} value={m}>{MEAL_LABEL[m]}</option>)}
         </select>
         <select value={result} onChange={e => setResult(e.target.value as ScanResult | 'all')} aria-label="Result">
@@ -78,7 +78,7 @@ export function LogScreen() {
             {shown.map(s => (
               <tr key={s.id}>
                 <td>{localTime(s.scannedAt)}</td>
-                <td>{MEAL_LABEL[s.meal]}</td>
+                <td>{mealLabel(s.meal)}</td>
                 <td className="mono">{s.rezNo}</td>
                 <td>{s.clientName || <span className="muted">–</span>}</td>
                 <td>{s.unitNo || '–'}</td>

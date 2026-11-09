@@ -2,7 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect, useState } from 'react'
 import { UpdateBanner } from './components/UpdateBanner'
 import { localDate } from './lib/dates'
-import { db, getSetting, setSetting, type Meal } from './lib/db'
+import { db, getSetting, isMeal, setSetting, type Meal } from './lib/db'
 import { autoExportMeal } from './lib/exportLog'
 import { ImportScreen } from './screens/ImportScreen'
 import { LogScreen } from './screens/LogScreen'
@@ -17,7 +17,8 @@ export default function App() {
     const id = await getSetting<number>('activeListId')
     return (id !== undefined && (await db.lists.get(id))) || null
   })
-  const meal = useLiveQuery(() => getSetting<Meal>('meal')) ?? 'breakfast'
+  const storedMeal = useLiveQuery(() => getSetting<Meal>('meal'))
+  const meal: Meal = isMeal(storedMeal) ? storedMeal : 'lunch'
 
   useEffect(() => {
     // Ask the browser not to clear this app's data when disk space runs low.

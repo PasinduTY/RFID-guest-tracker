@@ -8,8 +8,8 @@ import { beep } from '../lib/feedback'
 import { recordScan } from '../lib/scan'
 import { useScanner } from '../lib/useScanner'
 
-/** After this hour the guard is reminded if Breakfast is still selected. */
-const LUNCH_REMINDER_HOUR = 11
+/** After this hour the guard is reminded if Lunch is still selected. */
+const DINNER_REMINDER_HOUR = 16
 /** How long a result stays on screen before it goes back to "Ready to scan". */
 const RESULT_SHOWN_MS = 10_000
 
@@ -73,7 +73,7 @@ export function ScanScreen({ list, meal, onMealChange, onImport }: Props) {
   }
 
   const listCoversToday = list.dateFrom && list.dateFrom <= today && today <= (list.dateTo ?? list.dateFrom)
-  const remind = meal === 'breakfast' && now.getHours() >= LUNCH_REMINDER_HOUR
+  const remind = meal === 'lunch' && now.getHours() >= DINNER_REMINDER_HOUR
 
   return (
     <section className="screen">
@@ -103,8 +103,8 @@ export function ScanScreen({ list, meal, onMealChange, onImport }: Props) {
 
       {remind && (
         <p className="notice warning reminder">
-          It's after {LUNCH_REMINDER_HOUR}:00 and Breakfast is still selected.
-          <button onClick={() => onMealChange('lunch')}>Switch to lunch</button>
+          It's after {DINNER_REMINDER_HOUR}:00 and Lunch is still selected.
+          <button onClick={() => onMealChange('dinner')}>Switch to dinner</button>
         </p>
       )}
       {!listCoversToday && (
