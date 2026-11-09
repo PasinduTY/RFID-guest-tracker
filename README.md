@@ -1,18 +1,20 @@
 # Meal access
 
-Checks restaurant guests at the entrance by their RFID tag. The guard loads the day's
-Rex "Full Meal Attendance Report", picks Breakfast or Dinner, and scans tags: each scan shows
-**Granted**, **Already scanned** or **Denied** and is logged.
+Checks restaurant guests at the entrance by their RFID tag. The guard loads the day's two
+Rex "Meal Attendance Reports" (one for breakfast, one for dinner), picks Breakfast or Dinner, and
+scans tags: each scan is checked against that meal's list, shows **Granted**,
+**Already scanned** or **Denied**, and is logged.
 
 Runs entirely in the browser (React + TypeScript + Vite). There is no backend: the guest list and
 scan log are stored in the browser's IndexedDB on the entrance laptop.
 
 ## How it works
 
-- **Import** – choose the report as `.xlsx` or `.csv` (the Rex PDF converted to a spreadsheet).
+- **Import** – load the breakfast list and the dinner list separately (each card takes its own
+  report as `.xlsx` or `.csv`, the Rex PDF converted to a spreadsheet).
   Columns are found by their headers (`Rez #`, `Unit #`, `Client Name`, `Occ(s)`, `Qty`); a guest
   row is any row whose Rez # is all digits. The occupants read must add up to the report's
-  `Total:` line or the file is refused. The new list replaces the previous one. The import warns
+  `Total:` line or the file is refused. A new list replaces only that meal's list. The import warns
   about guests with no Unit # or sharing a Unit #, because tags are matched by Unit #.
 - **Scan** – the RFID reader works as a USB keyboard (HID): it types the guest's **Unit #** (e.g.
   `NV-214`) and presses Enter. Matching ignores case and spaces; if two guests share a unit, the
@@ -20,10 +22,10 @@ scan log are stored in the browser's IndexedDB on the entrance laptop.
   The app listens on the whole page, so focus doesn't matter, and ignores keys typed slower than
   `SCAN_KEY_GAP_MS` (100 ms) apart, i.e. a person typing. A guest scanned twice for the same meal
   on the same day shows **Already scanned**; it is not blocked.
-- **Log** – filter by day, meal and result. **Export to PDF** gives the day's attendance laid out
-  like the uploaded list (Rez #, Unit #, Client Name, Occ(s), Qty) with a Breakfast and/or Dinner
-  column: the time each guest was let in, or "Not scanned". Tags that weren't on the list follow
-  in a separate table. Every imported list is kept, so past days can still be exported.
+- **Log** – filter by day, meal and result. **Export to PDF** gives one section per meal, each
+  laid out like that meal's uploaded list (Rez #, Unit #, Client Name, Occ(s), Qty) plus the time
+  each guest was let in, or "Not scanned". Tags that weren't on the list follow in a separate
+  table. Every imported list is kept, so past days can still be exported.
 
 ### Keeping the log safe
 

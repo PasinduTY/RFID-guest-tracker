@@ -62,41 +62,49 @@ export function ScanScreen({ list, meal, onMealChange, onImport }: Props) {
   }, [last])
   const shown = last?.meal === meal ? last : null
 
+  const listCoversToday = list?.dateFrom && list.dateFrom <= today && today <= (list.dateTo ?? list.dateFrom)
+  const remind = meal === 'breakfast' && now.getHours() >= DINNER_REMINDER_HOUR
+  const mealName = MEAL_LABEL[meal].toLowerCase()
+
+  const mealSwitch = (
+    <div className="meal-switch" role="radiogroup" aria-label="Meal">
+      {MEALS.map(m => (
+        <button
+          key={m}
+          role="radio"
+          aria-checked={meal === m}
+          className={meal === m ? `meal on ${m}` : 'meal'}
+          onClick={() => onMealChange(m)}
+        >
+          {MEAL_LABEL[m]}
+        </button>
+      ))}
+    </div>
+  )
+
   if (!list) {
     return (
-      <section className="screen empty">
-        <h2>Load today's guest list</h2>
-        <p className="muted">Scanning starts once the Rex meal report is imported.</p>
-        <button className="primary" onClick={onImport}>Import report</button>
+      <section className="screen">
+        <div className="scan-head">{mealSwitch}</div>
+        <div className="empty">
+          <h2>Load today's {mealName} list</h2>
+          <p className="muted">Scanning for {mealName} starts once its Rex report is imported.</p>
+          <button className="primary" onClick={onImport}>Import {mealName} list</button>
+        </div>
       </section>
     )
   }
 
-  const listCoversToday = list.dateFrom && list.dateFrom <= today && today <= (list.dateTo ?? list.dateFrom)
-  const remind = meal === 'breakfast' && now.getHours() >= DINNER_REMINDER_HOUR
-
   return (
     <section className="screen">
       <div className="scan-head">
-        <div className="meal-switch" role="radiogroup" aria-label="Meal">
-          {MEALS.map(m => (
-            <button
-              key={m}
-              role="radio"
-              aria-checked={meal === m}
-              className={meal === m ? `meal on ${m}` : 'meal'}
-              onClick={() => onMealChange(m)}
-            >
-              {MEAL_LABEL[m]}
-            </button>
-          ))}
-        </div>
+        {mealSwitch}
         <div className="counter">
           <span className="counter-value">
             {checkedIn ?? 0} / {list.guestCount}
           </span>
           <span className={listCoversToday ? 'muted' : 'warning-text'}>
-            checked in · list {list.dateFrom ? formatDay(list.dateFrom) : 'undated'}
+            checked in · {mealName} list {list.dateFrom ? formatDay(list.dateFrom) : 'undated'}
           </span>
         </div>
       </div>
@@ -109,8 +117,8 @@ export function ScanScreen({ list, meal, onMealChange, onImport }: Props) {
       )}
       {!listCoversToday && (
         <p className="notice warning">
-          The active list isn't for today ({formatDay(today)}).{' '}
-          <button className="link-button" onClick={onImport}>Load today's report</button>
+          The {mealName} list isn't for today ({formatDay(today)}).{' '}
+          <button className="link-button" onClick={onImport}>Load today's {mealName} report</button>
         </p>
       )}
 
@@ -168,7 +176,7 @@ function ResultPanel({ scan, meal }: { scan: Scan | null; meal: Meal }) {
       <div className="result denied" aria-live="assertive">
         <span className="result-title">✗ Denied</span>
         <span className="result-name mono">Unit {scan.raw.trim()}</span>
-        <span className="result-detail">Not on today's list</span>
+        <span className="result-detail">Not on today's {MEAL_LABEL[meal].toLowerCase()} list</span>
       </div>
     )
   }

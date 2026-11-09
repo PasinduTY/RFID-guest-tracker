@@ -105,7 +105,7 @@ select, input {
 .tab.on { background: var(--surface-2); color: var(--text); }
 .content { flex: 1; width: 100%; max-width: 1100px; margin: 0 auto; padding: 20px; }
 .screen { display: flex; flex-direction: column; gap: 14px; }
-.screen.empty { align-items: center; text-align: center; padding: 80px 0; }
+.empty { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 60px 0; }
 .actions { display: flex; gap: 8px; justify-content: flex-end; }
 
 .notice {
@@ -132,16 +132,19 @@ tr:last-child td { border-bottom: 0; }
 .pill.denied { background: var(--danger-bg); color: var(--danger-text); }
 
 /* Import */
-.active-list {
-  display: flex; gap: 14px; flex-wrap: wrap; align-items: baseline;
-  padding: 12px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+.small { font-size: 13px; font-weight: 400; }
+.meal-lists { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+.meal-list {
+  display: flex; flex-direction: column; gap: 4px; padding: 16px; cursor: pointer;
+  border: 2px dashed var(--border-strong); border-radius: var(--radius); background: var(--surface);
 }
-.dropzone {
-  display: block; text-align: center; padding: 28px; cursor: pointer;
-  border: 2px dashed var(--border-strong); border-radius: var(--radius); background: var(--surface); color: var(--muted);
-}
-.dropzone.dragging { border-color: var(--accent); background: var(--success-bg); }
-.dropzone-icon { display: block; font-size: 28px; }
+.meal-list.breakfast { border-top: 6px solid var(--warning-border); }
+.meal-list.dinner { border-top: 6px solid var(--dinner-text); }
+.meal-list.dragging, .meal-list.selected { border-color: var(--accent); background: var(--success-bg); }
+.meal-list-title { font-size: 20px; font-weight: 600; }
+.meal-list-date { font-size: 16px; }
+.meal-list-action { margin-top: 8px; color: var(--muted); font-size: 14px; }
+.preview { display: flex; flex-direction: column; gap: 14px; }
 .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
 .card { background: var(--surface-2); border-radius: var(--radius); padding: 12px 14px; display: flex; flex-direction: column; }
 .card.success { background: var(--success-bg); color: var(--success-text); }

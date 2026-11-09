@@ -2,7 +2,13 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { useEffect, useState } from "react";
 import { UpdateBanner } from "./components/UpdateBanner";
 import { localDate } from "./lib/dates";
-import { db, getSetting, isMeal, setSetting, type Meal } from "./lib/db";
+import {
+  getActiveList,
+  getSetting,
+  isMeal,
+  setSetting,
+  type Meal,
+} from "./lib/db";
 import { autoExportMeal } from "./lib/exportLog";
 import { ImportScreen } from "./screens/ImportScreen";
 import { LogScreen } from "./screens/LogScreen";
@@ -17,12 +23,14 @@ const SCREENS: [Screen, string][] = [
 
 export default function App() {
   const [screen, setScreen] = useState<Screen | null>(null);
-  const activeList = useLiveQuery(async () => {
-    const id = await getSetting<number>("activeListId");
-    return (id !== undefined && (await db.lists.get(id))) || null;
-  });
+  // Breakfast and dinner each have their own uploaded list.
+  const lists = useLiveQuery(async () => ({
+    breakfast: (await getActiveList("breakfast")) ?? null,
+    dinner: (await getActiveList("dinner")) ?? null,
+  }));
   const storedMeal = useLiveQuery(() => getSetting<Meal>("meal"));
   const meal: Meal = isMeal(storedMeal) ? storedMeal : "breakfast";
+  const activeList = lists?.[meal] ?? lists?.breakfast ?? lists?.dinner;
 
   useEffect(() => {
     // Ask the browser not to clear this app's data when disk space runs low.
@@ -31,8 +39,7 @@ export default function App() {
 
   // Open on Scan once a list exists, otherwise on Import.
   const current =
-    screen ??
-    (activeList === undefined ? null : activeList ? "scan" : "import");
+    screen ?? (lists === undefined ? null : activeList ? "scan" : "import");
 
   async function changeMeal(next: Meal) {
     if (next === meal) return;
@@ -66,15 +73,13 @@ export default function App() {
       </header>
       <UpdateBanner />
       <main className="content">
-        {current === "import" && (
-          <ImportScreen
-            activeList={activeList ?? null}
-            onLoaded={() => setScreen("scan")}
-          />
+        {current === "import" && lists && (
+          // Stay on Import after loading one list, so the other meal's list can be loaded too.
+          <ImportScreen lists={lists} onLoaded={() => setScreen("import")} />
         )}
         {current === "scan" && (
           <ScanScreen
-            list={activeList ?? null}
+            list={lists?.[meal] ?? null}
             meal={meal}
             onMealChange={changeMeal}
             onImport={() => setScreen("import")}

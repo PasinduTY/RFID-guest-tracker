@@ -13,9 +13,11 @@ export const mealLabel = (meal: string) => MEAL_LABEL[meal as Meal] ?? meal.char
 export const isMeal = (value: unknown): value is Meal => MEALS.includes(value as Meal)
 export const RESULT_LABEL: Record<ScanResult, string> = { granted: 'Granted', denied: 'Denied', repeat: 'Repeat' }
 
-/** One imported report file. */
+/** One imported report file. Breakfast and dinner each have their own list. */
 export interface GuestList {
   id: number
+  /** Missing on lists imported before each meal had its own list. */
+  meal?: Meal
   fileName: string
   importedAt: string
   property: string | null
@@ -93,28 +95,31 @@ export async function setSetting(key: string, value: unknown): Promise<void> {
   await db.settings.put({ key, value })
 }
 
-export async function getActiveList(): Promise<GuestList | undefined> {
-  const id = await getSetting<number>('activeListId')
+const activeKey = (meal: Meal) => `activeListId:${meal}`
+
+/** The list scans for this meal are checked against. */
+export async function getActiveList(meal: Meal): Promise<GuestList | undefined> {
+  const id = await getSetting<number>(activeKey(meal))
   return id === undefined ? undefined : db.lists.get(id)
 }
 
-/** Saves a checked report as the active list. Older lists are kept so past days can still be reported on. */
-export async function saveList(list: Omit<GuestList, 'id'>, guests: ReportGuest[]): Promise<number> {
+/** Saves a checked report as the meal's active list. Older lists are kept so past days can still be reported on. */
+export async function saveList(list: Omit<GuestList, 'id'> & { meal: Meal }, guests: ReportGuest[]): Promise<number> {
   return db.transaction('rw', db.lists, db.guests, db.settings, async () => {
     const listId = await db.lists.add(list as GuestList)
     await db.guests.bulkAdd(guests.map(g => ({ ...g, listId, unitKey: unitKey(g.unitNo) }) as Guest))
-    await setSetting('activeListId', listId)
+    await setSetting(activeKey(list.meal), listId)
     return listId
   })
 }
 
 /**
- * The guest list a day's scans were checked against: the newest list used that day
- * (a corrected report may have been loaded mid-day), or the active list when nobody was scanned yet.
+ * The guest list a day's meal was checked against: the newest list used for it that day
+ * (a corrected report may have been loaded mid-meal), or the meal's active list when nobody was scanned yet.
  */
-export async function listForDay(day: string): Promise<{ list: GuestList; guests: Guest[] } | null> {
-  const usedIds = (await db.scans.where('mealDate').equals(day).toArray()).map(s => s.listId)
-  const list = usedIds.length ? await db.lists.get(Math.max(...usedIds)) : await getActiveList()
+export async function listForDay(day: string, meal: Meal): Promise<{ list: GuestList; guests: Guest[] } | null> {
+  const usedIds = (await db.scans.where('[mealDate+meal]').equals([day, meal]).toArray()).map(s => s.listId)
+  const list = usedIds.length ? await db.lists.get(Math.max(...usedIds)) : await getActiveList(meal)
   if (!list) return null
   return { list, guests: await db.guests.where('listId').equals(list.id).sortBy('id') }
 }

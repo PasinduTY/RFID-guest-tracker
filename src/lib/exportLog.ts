@@ -24,20 +24,19 @@ function sheetOf(scans: Scan[]) {
 }
 
 /**
- * Downloads the day's attendance as a PDF: every guest on that day's uploaded list, with the time
- * they were let in for each meal (or "Not scanned"), then any tags that weren't on the list.
+ * Downloads the day's attendance as a PDF, one section per meal: every guest on that meal's
+ * uploaded list with the time they were let in (or "Not scanned"), then tags that weren't on it.
  */
 export async function downloadPdf(day: string, meals: Meal[], fileName: string): Promise<void> {
   // Loaded only when exporting, so the PDF library doesn't slow down the scan screen.
   const { buildLogPdf } = await import('./logPdf')
-  const source = await listForDay(day)
-  buildLogPdf({
-    day,
-    meals,
-    list: source?.list ?? null,
-    guests: source?.guests ?? [],
-    scans: await scansFor(day),
-  }).save(fileName)
+  const sections = await Promise.all(
+    meals.map(async meal => {
+      const source = await listForDay(day, meal)
+      return { meal, list: source?.list ?? null, guests: source?.guests ?? [] }
+    }),
+  )
+  buildLogPdf({ day, sections, scans: await scansFor(day) }).save(fileName)
 }
 
 export async function scansFor(day: string, meal?: Meal): Promise<Scan[]> {

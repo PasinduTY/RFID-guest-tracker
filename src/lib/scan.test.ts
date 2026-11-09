@@ -1,25 +1,27 @@
 import 'fake-indexeddb/auto'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { db, saveList } from './db'
+import { db, getActiveList, listForDay, saveList, type Meal } from './db'
 import { recordScan } from './scan'
 import { ScannerBuffer } from './scannerBuffer'
 
 const guest = (rezNo: string, unitNo: string, clientName: string) => ({ rezNo, unitNo, clientName, occupants: 1, qty: 7 })
+const listInfo = (meal: Meal, fileName: string, guestCount: number) => ({
+  meal,
+  fileName,
+  importedAt: new Date().toISOString(),
+  property: null,
+  dateFrom: '2026-11-04',
+  dateTo: '2026-11-04',
+  generatedAt: null,
+  guestCount,
+  totalOccupants: guestCount,
+})
 
-async function loadList() {
-  return saveList(
-    {
-      fileName: 'report.xlsx',
-      importedAt: new Date().toISOString(),
-      property: null,
-      dateFrom: '2026-11-04',
-      dateTo: '2026-11-04',
-      generatedAt: null,
-      guestCount: 2,
-      totalOccupants: 2,
-    },
-    [guest('2026105521', 'NV-214', 'ADOMS, Zachary'), guest('2026105519', 'CKD-200', 'BALA, David')],
-  )
+async function loadList(meal: Meal = 'breakfast') {
+  return saveList(listInfo(meal, 'report.xlsx', 2), [
+    guest('2026105521', 'NV-214', 'ADOMS, Zachary'),
+    guest('2026105519', 'CKD-200', 'BALA, David'),
+  ])
 }
 
 describe('recordScan', () => {
@@ -42,7 +44,6 @@ describe('recordScan', () => {
     expect(again.result).toBe('repeat')
     expect(again.firstScannedAt).toBe(first.scannedAt)
 
-    expect((await recordScan('NV-214', 'dinner', listId, at(19, 5))).result).toBe('granted')
     expect((await recordScan('NV-214', 'breakfast', listId, new Date(2026, 10, 5, 8, 40))).result).toBe('granted')
 
     const unknown = await recordScan('NV-999', 'breakfast', listId, at(8, 51))
@@ -52,18 +53,34 @@ describe('recordScan', () => {
 
     // A Rez # is no longer what the tag carries.
     expect((await recordScan('2026105519', 'breakfast', listId, at(8, 52))).result).toBe('denied')
-    expect(await db.scans.count()).toBe(6)
+    expect(await db.scans.count()).toBe(5)
   })
 
-  it('uses only the newest list', async () => {
-    await loadList()
-    const newer = await saveList(
-      { fileName: 'b.xlsx', importedAt: '', property: null, dateFrom: null, dateTo: null, generatedAt: null, guestCount: 1, totalOccupants: 1 },
-      [guest('2026100000', 'CK-191', 'NEW, Guest')],
-    )
+  it('keeps separate lists for breakfast and dinner', async () => {
+    await loadList('breakfast')
+    await saveList(listInfo('dinner', 'dinner.xlsx', 1), [guest('2026100000', 'CK-191', 'NEW, Guest')])
+    const breakfast = (await getActiveList('breakfast'))!
+    const dinner = (await getActiveList('dinner'))!
+    expect(breakfast.fileName).toBe('report.xlsx')
+    expect(dinner.fileName).toBe('dinner.xlsx')
+
+    const at = (h: number) => new Date(2026, 10, 4, h, 0)
+    expect((await recordScan('NV-214', 'breakfast', breakfast.id, at(8))).result).toBe('granted')
+    expect((await recordScan('NV-214', 'dinner', dinner.id, at(19))).result).toBe('denied')
+    expect((await recordScan('CK-191', 'dinner', dinner.id, at(19))).result).toBe('granted')
+
+    expect((await listForDay('2026-11-04', 'breakfast'))?.guests.map(g => g.unitNo)).toEqual(['NV-214', 'CKD-200'])
+    expect((await listForDay('2026-11-04', 'dinner'))?.guests.map(g => g.unitNo)).toEqual(['CK-191'])
+  })
+
+  it('a newly loaded list replaces only that meal\'s list', async () => {
+    await loadList('breakfast')
+    const dinner = await loadList('dinner')
+    const newer = await saveList(listInfo('breakfast', 'b.xlsx', 1), [guest('2026100000', 'CK-191', 'NEW, Guest')])
+    expect((await getActiveList('breakfast'))?.id).toBe(newer)
+    expect((await getActiveList('dinner'))?.id).toBe(dinner)
     expect((await recordScan('NV-214', 'breakfast', newer)).result).toBe('denied')
     expect((await recordScan('CK-191', 'breakfast', newer)).result).toBe('granted')
-    expect(await db.guests.where('listId').equals(newer).count()).toBe(1)
   })
 })
 
