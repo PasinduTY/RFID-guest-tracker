@@ -117,7 +117,7 @@ export function ScanScreen({ list, meal, onMealChange, onImport }: Props) {
       <ResultPanel scan={shown} meal={meal} />
 
       <details className="manual">
-        <summary>Type a Rez # instead</summary>
+        <summary>Type a Unit # instead</summary>
         <form
           onSubmit={e => {
             e.preventDefault()
@@ -125,7 +125,7 @@ export function ScanScreen({ list, meal, onMealChange, onImport }: Props) {
             setManual('')
           }}
         >
-          <input value={manual} onChange={e => setManual(e.target.value)} inputMode="numeric" placeholder="2026105521" />
+          <input value={manual} onChange={e => setManual(e.target.value)} placeholder="Enter Unit #" aria-label="Unit #" />
           <button type="submit">Check</button>
         </form>
       </details>
@@ -139,8 +139,8 @@ export function ScanScreen({ list, meal, onMealChange, onImport }: Props) {
             {recent?.map(s => (
               <tr key={s.id}>
                 <td>{localTime(s.scannedAt)}</td>
-                <td className={s.clientName ? '' : 'muted mono'}>{s.clientName || s.rezNo}</td>
-                <td>{s.unitNo || '–'}</td>
+                <td className={s.clientName ? '' : 'muted'}>{s.clientName || 'Not on list'}</td>
+                <td className="mono">{s.unitNo || '–'}</td>
                 <td><ResultPill result={s.result} /></td>
               </tr>
             ))}
@@ -167,7 +167,7 @@ function ResultPanel({ scan, meal }: { scan: Scan | null; meal: Meal }) {
     return (
       <div className="result denied" aria-live="assertive">
         <span className="result-title">✗ Denied</span>
-        <span className="result-name mono">{scan.rezNo}</span>
+        <span className="result-name mono">Unit {scan.raw.trim()}</span>
         <span className="result-detail">Not on today's list</span>
       </div>
     )

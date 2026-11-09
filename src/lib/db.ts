@@ -1,5 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie'
-import type { ReportGuest } from './report'
+import { unitKey, type ReportGuest } from './report'
 
 export type Meal = 'lunch' | 'dinner'
 export type ScanResult = 'granted' | 'denied' | 'repeat'
@@ -29,6 +29,8 @@ export interface GuestList {
 export interface Guest extends ReportGuest {
   id: number
   listId: number
+  /** Unit # as the scanner's output is matched against it (see `unitKey`). */
+  unitKey: string
 }
 
 export interface Scan {
@@ -37,13 +39,15 @@ export interface Scan {
   /** Local YYYY-MM-DD of the scan; with `meal` this identifies one sitting. */
   mealDate: string
   meal: Meal
-  /** Exactly what the scanner typed. */
+  /** Exactly what the scanner typed: the guest's Unit # on their RFID tag. */
   raw: string
+  /** Rez # of the guest the tag matched; empty when denied. */
   rezNo: string
   result: ScanResult
   listId: number
   // Copied from the guest row so the log still reads correctly after a new list is loaded.
   clientName: string
+  /** The guest's Unit #, or the scanned value when denied. */
   unitNo: string
   occupants: number | null
   /** For repeats: when this guest was first let in for this meal. */
@@ -69,6 +73,18 @@ db.version(1).stores({
   settings: 'key',
 })
 
+// Tags carry the Unit #, so guests are looked up by it.
+db.version(2)
+  .stores({ guests: '++id, listId, [listId+rezNo], [listId+unitKey]' })
+  .upgrade(tx =>
+    tx
+      .table('guests')
+      .toCollection()
+      .modify(g => {
+        g.unitKey = unitKey(g.unitNo ?? '')
+      }),
+  )
+
 export async function getSetting<T>(key: string): Promise<T | undefined> {
   return (await db.settings.get(key))?.value as T | undefined
 }
@@ -86,7 +102,7 @@ export async function getActiveList(): Promise<GuestList | undefined> {
 export async function saveList(list: Omit<GuestList, 'id'>, guests: ReportGuest[]): Promise<number> {
   return db.transaction('rw', db.lists, db.guests, db.settings, async () => {
     const listId = await db.lists.add(list as GuestList)
-    await db.guests.bulkAdd(guests.map(g => ({ ...g, listId }) as Guest))
+    await db.guests.bulkAdd(guests.map(g => ({ ...g, listId, unitKey: unitKey(g.unitNo) }) as Guest))
     await setSetting('activeListId', listId)
     return listId
   })

@@ -12,8 +12,11 @@ scan log are stored in the browser's IndexedDB on the entrance laptop.
 - **Import** – choose the report as `.xlsx` or `.csv` (the Rex PDF converted to a spreadsheet).
   Columns are found by their headers (`Rez #`, `Unit #`, `Client Name`, `Occ(s)`, `Qty`); a guest
   row is any row whose Rez # is all digits. The occupants read must add up to the report's
-  `Total:` line or the file is refused. The new list replaces the previous one.
-- **Scan** – the RFID reader works as a USB keyboard (HID): it types the Rez # and presses Enter.
+  `Total:` line or the file is refused. The new list replaces the previous one. The import warns
+  about guests with no Unit # or sharing a Unit #, because tags are matched by Unit #.
+- **Scan** – the RFID reader works as a USB keyboard (HID): it types the guest's **Unit #** (e.g.
+  `NV-214`) and presses Enter. Matching ignores case and spaces; if two guests share a unit, the
+  first one listed is matched.
   The app listens on the whole page, so focus doesn't matter, and ignores keys typed slower than
   `SCAN_KEY_GAP_MS` (100 ms) apart, i.e. a person typing. A guest scanned twice for the same meal
   on the same day shows **Already scanned**; it is not blocked.

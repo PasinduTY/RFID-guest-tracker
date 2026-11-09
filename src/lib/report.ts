@@ -29,6 +29,9 @@ export interface ParsedReport {
 
 export type Cell = string | number | boolean | Date | null | undefined
 
+/** Unit # as compared with the scanner's output: no spaces, upper case, so "nv-214 " matches "NV-214". */
+export const unitKey = (unit: string) => unit.replace(/\s+/g, '').toUpperCase()
+
 /** Header text -> lowercase letters only, so "Rez #" and "rez#" both become "rez". */
 const key = (v: Cell) => cellText(v).toLowerCase().replace(/[^a-z]/g, '')
 
@@ -174,6 +177,26 @@ export function parseReport(rows: Cell[][]): ParsedReport {
   }
   const odd = result.guests.filter(g => g.rezNo.length !== 10).length
   if (odd) result.warnings.push(`${odd} Rez # aren't 10 digits long.`)
+
+  // Tags carry the Unit #, so every guest needs one, and one unit should mean one guest.
+  if (col.unit < 0) {
+    result.errors.push('No "Unit #" column found. Guests are matched to their tags by Unit #.')
+  } else {
+    const noUnit = result.guests.filter(g => !unitKey(g.unitNo))
+    if (noUnit.length) {
+      result.warnings.push(
+        `${noUnit.length} guest(s) have no Unit # and can't be scanned: ${noUnit.map(g => g.clientName || g.rezNo).join(', ')}.`,
+      )
+    }
+    const byUnit = new Map<string, number>()
+    for (const g of result.guests) if (unitKey(g.unitNo)) byUnit.set(unitKey(g.unitNo), (byUnit.get(unitKey(g.unitNo)) ?? 0) + 1)
+    const shared = [...byUnit].filter(([, n]) => n > 1).map(([u]) => u)
+    if (shared.length) {
+      result.warnings.push(
+        `${shared.length} Unit # are listed for more than one guest (${shared.join(', ')}); a scan matches the first guest listed.`,
+      )
+    }
+  }
   if (!result.dateFrom) result.warnings.push("The report date couldn't be found in the file.")
 
   return result

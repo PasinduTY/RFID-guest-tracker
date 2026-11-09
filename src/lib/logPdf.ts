@@ -127,7 +127,7 @@ export function buildLogPdf({ day, meals, list, guests, scans, exportedAt = new 
     doc.text('Scans not on the guest list', left, y)
     autoTable(doc, {
       startY: y + 2,
-      head: [['Time', 'Meal', 'Scanned value', 'Result']],
+      head: [['Time', 'Meal', 'Scanned Unit #', 'Result']],
       body: notOnList.map(s => [localTime(s.scannedAt), mealLabel(s.meal), s.raw.trim(), RESULT_LABEL[s.result]]),
       theme: 'striped',
       styles: { font: 'helvetica', fontSize: 9, cellPadding: 1.6, textColor: 20 },

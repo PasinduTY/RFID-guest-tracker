@@ -3,7 +3,8 @@
  * milliseconds per key; a person is much slower, so slow keys are never taken as a scan.
  */
 export const SCAN_KEY_GAP_MS = 100
-const MIN_LENGTH = 4
+/** Shortest tag accepted; Unit # can be short (e.g. "A-1"). */
+const MIN_LENGTH = 2
 
 /** Collects keystrokes from a keyboard-emulating RFID scanner and returns the code when Enter/Tab ends it. */
 export class ScannerBuffer {

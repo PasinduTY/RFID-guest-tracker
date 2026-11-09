@@ -69,6 +69,21 @@ describe('parseReport', () => {
     expect(r.totals).toEqual({ occupants: 3, qty: 27 })
   })
 
+  it('warns when a Unit # is shared or missing, since tags carry the Unit #', () => {
+    const rows = sampleRows()
+    rows[5] = [null, 2026105519, 'NV-214', 'BALA, David', null, 1, 8]
+    rows[6] = [null, 2026105502, null, 'DE KLERK, Paul', null, 1, 12]
+    const r = parseReport(rows)
+    expect(r.errors).toEqual([])
+    expect(r.warnings).toContain('1 guest(s) have no Unit # and can\'t be scanned: DE KLERK, Paul.')
+    expect(r.warnings.some(w => w.includes('more than one guest (NV-214)'))).toBe(true)
+  })
+
+  it('rejects a file without a Unit # column', () => {
+    const rows = sampleRows().map(r => r.filter((_, i) => i !== 2))
+    expect(parseReport(rows).errors).toContain('No "Unit #" column found. Guests are matched to their tags by Unit #.')
+  })
+
   it('rejects a file without a Rez # column', () => {
     expect(parseReport([['Name', 'Room'], ['A', '1']]).errors[0]).toMatch(/No "Rez #" column/)
   })

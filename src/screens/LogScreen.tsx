@@ -72,16 +72,16 @@ export function LogScreen() {
       <div className="table-wrap tall">
         <table>
           <thead>
-            <tr><th>Time</th><th>Meal</th><th>Rez #</th><th>Name</th><th>Unit</th><th>Result</th></tr>
+            <tr><th>Time</th><th>Meal</th><th>Unit #</th><th>Name</th><th>Rez #</th><th>Result</th></tr>
           </thead>
           <tbody>
             {shown.map(s => (
               <tr key={s.id}>
                 <td>{localTime(s.scannedAt)}</td>
                 <td>{mealLabel(s.meal)}</td>
-                <td className="mono">{s.rezNo}</td>
-                <td>{s.clientName || <span className="muted">–</span>}</td>
-                <td>{s.unitNo || '–'}</td>
+                <td className="mono">{s.unitNo || '–'}</td>
+                <td>{s.clientName || <span className="muted">Not on list</span>}</td>
+                <td className="mono">{s.rezNo || '–'}</td>
                 <td>
                   <ResultPill result={s.result} />
                   {s.firstScannedAt && <span className="muted"> first {localTime(s.firstScannedAt)}</span>}
