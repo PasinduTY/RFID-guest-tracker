@@ -101,6 +101,7 @@ button {
   background: var(--surface);
   color: var(--text);
   cursor: pointer;
+  white-space: nowrap;
   transition: background 0.12s, border-color 0.12s;
 }
 button:hover:not(:disabled) { background: var(--surface-2); }
@@ -179,7 +180,7 @@ table { width: 100%; border-collapse: collapse; font-size: 14px; }
 th, td { text-align: left; padding: 9px 14px; border-bottom: 1px solid var(--border); }
 th {
   font-weight: 600; color: var(--faint); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
-  position: sticky; top: 0; background: var(--surface);
+  white-space: nowrap; position: sticky; top: 0; background: var(--surface);
 }
 tbody tr:hover td { background: var(--surface-2); }
 tr:last-child td { border-bottom: 0; }
@@ -201,7 +202,7 @@ td.mono { font-size: 13px; }
 .badge.success { background: var(--success-bg); color: var(--success-text); }
 .badge.warning { background: var(--warning-bg); color: var(--warning-text); }
 .button-like {
-  display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; font-weight: 500;
+  display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; font-weight: 500; white-space: nowrap;
   border: 1px solid var(--border-strong); border-radius: var(--radius); background: var(--surface);
 }
 
@@ -296,7 +297,7 @@ td.mono { font-size: 13px; }
 .result.repeat .result-icon { color: var(--warning-dot); }
 .result.denied .result-icon { color: var(--danger-dot); }
 
-.recent-head { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; }
+.recent-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
 .section-label { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--faint); }
 .manual { display: flex; gap: 8px; }
 .manual input { flex: 1; max-width: 260px; }
@@ -326,12 +327,21 @@ td.mono { font-size: 13px; }
   .result { padding: 24px; gap: 18px; }
   .result-icon { width: 52px; height: 52px; }
   .result-name { font-size: 26px; }
+  /* Manual entry takes its own full-width row instead of pushing the page sideways. */
+  .manual { flex: 1 1 100%; min-width: 0; }
+  /* width 0 + flex 1: the input fills what's left instead of keeping its built-in width. */
+  .manual input { max-width: none; min-width: 0; width: 0; }
+  /* Long names and the "already scanned" note wrap instead of being cut off. */
+  .recent li { align-items: start; }
+  .recent .dot { margin-top: 6px; }
+  .recent .name { white-space: normal; }
+  .recent .note { display: block; }
 }
 
 /* Log */
-.page-head.with-actions { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
-.page-head.with-actions > div:first-child { flex: 1; min-width: 240px; }
-.head-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+/* PDF buttons close the filter row on the right; on phones they drop below the filters. */
+.head-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+.head-actions button { min-width: 0; }
 
 .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .dot.granted { background: var(--success-dot); }
@@ -390,9 +400,16 @@ tbody tr.empty-table-row:hover td { background: none; }
 .folder-text { flex: 1; min-width: 220px; display: flex; flex-direction: column; font-size: 14px; }
 
 @media (max-width: 640px) {
-  .head-actions, .head-actions button { flex: 1; }
+  /* The two PDF buttons share a row, and drop to one per row when the phone is too narrow. */
+  .head-actions { flex: 1 1 100%; }
+  .head-actions button { flex: 1 1 auto; padding: 8px 10px; }
   .filters .segmented { width: 100%; }
-  .filters .segmented button { flex: 1; padding: 6px 8px; }
+  .filters .segmented button { flex: 1; padding: 6px 8px; min-width: 0; }
   .select-with-icon { width: 100%; }
-  .select-with-icon select { flex: 1; }
+  .select-with-icon select { flex: 1; min-width: 0; }
+}
+@media (max-width: 380px) {
+  /* Very narrow phones: text-only meal filter so all three options fit on one line. */
+  .filters .segmented svg { display: none; }
+  .filters .segmented button { font-size: 14px; }
 }

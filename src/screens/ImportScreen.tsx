@@ -2,6 +2,7 @@ import {
   CalendarDays,
   Check,
   CircleAlert,
+  Clock,
   FileSpreadsheet,
   TriangleAlert,
   Upload,
@@ -171,7 +172,10 @@ function MealListCard({
           <span className="meal-list-meta">
             <FileSpreadsheet size={14} aria-hidden="true" />
             <span className="file-name">{list.fileName}</span>
-            <span className="faint">· loaded {new Date(list.importedAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</span>
+          </span>
+          <span className="meal-list-meta faint">
+            <Clock size={14} aria-hidden="true" />
+            Loaded {new Date(list.importedAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
           </span>
         </div>
       ) : (

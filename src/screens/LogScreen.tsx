@@ -44,21 +44,9 @@ export function LogScreen() {
 
   return (
     <section className="screen">
-      <header className="page-head with-actions">
-        <div>
-          <h2>Scan log</h2>
-          <p className="muted">Every scan, by day and meal. Download a summary or the full guest report.</p>
-        </div>
-        <div className="head-actions">
-          <button onClick={() => downloadSummaryPdf(day, pdfMeals, pdfName('summary'))}>
-            <FileText size={16} aria-hidden="true" />
-            Summary PDF
-          </button>
-          <button className="primary" onClick={() => downloadPdf(day, pdfMeals, pdfName('log'))}>
-            <FileDown size={16} aria-hidden="true" />
-            Full report PDF
-          </button>
-        </div>
+      <header className="page-head">
+        <h2>Scan log</h2>
+        <p className="muted">Choose a day and meal, then download a summary or the full guest report.</p>
       </header>
 
       <div className="filters">
@@ -83,6 +71,17 @@ export function LogScreen() {
               </button>
             )
           })}
+        </div>
+        {/* After the filters, so the date and meal are picked before downloading (on phones they sit below them). */}
+        <div className="head-actions">
+          <button onClick={() => downloadSummaryPdf(day, pdfMeals, pdfName('summary'))}>
+            <FileText size={16} aria-hidden="true" />
+            Summary PDF
+          </button>
+          <button className="primary" onClick={() => downloadPdf(day, pdfMeals, pdfName('log'))}>
+            <FileDown size={16} aria-hidden="true" />
+            Full report PDF
+          </button>
         </div>
       </div>
 
