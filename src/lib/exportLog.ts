@@ -30,13 +30,23 @@ function sheetOf(scans: Scan[]) {
 export async function downloadPdf(day: string, meals: Meal[], fileName: string): Promise<void> {
   // Loaded only when exporting, so the PDF library doesn't slow down the scan screen.
   const { buildLogPdf } = await import('./logPdf')
+  buildLogPdf(await pdfInput(day, meals)).save(fileName)
+}
+
+/** Downloads a one-page PDF with the guest counts per meal (on list, took the meal, didn't, ...). */
+export async function downloadSummaryPdf(day: string, meals: Meal[], fileName: string): Promise<void> {
+  const { buildSummaryPdf } = await import('./logPdf')
+  buildSummaryPdf(await pdfInput(day, meals)).save(fileName)
+}
+
+async function pdfInput(day: string, meals: Meal[]) {
   const sections = await Promise.all(
     meals.map(async meal => {
       const source = await listForDay(day, meal)
       return { meal, list: source?.list ?? null, guests: source?.guests ?? [] }
     }),
   )
-  buildLogPdf({ day, sections, scans: await scansFor(day) }).save(fileName)
+  return { day, sections, scans: await scansFor(day) }
 }
 
 export async function scansFor(day: string, meal?: Meal): Promise<Scan[]> {

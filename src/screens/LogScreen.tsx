@@ -6,6 +6,7 @@ import { db, MEAL_LABEL, mealLabel, MEALS, RESULT_LABEL, type Meal, type ScanRes
 import {
   chooseFolder,
   downloadPdf,
+  downloadSummaryPdf,
   folderName,
   folderStatus,
   reconnectFolder,
@@ -28,10 +29,9 @@ export function LogScreen() {
     .filter(s => (meal === 'all' || s.meal === meal) && (result === 'all' || s.result === result))
     .reverse()
 
-  // The PDF lists every guest on the day's uploaded list, so only the date and meal filters apply to it.
-  function exportReport() {
-    downloadPdf(day, meal === 'all' ? MEALS : [meal], `meal-log-${day}${meal === 'all' ? '' : `-${meal}`}.pdf`)
-  }
+  // The PDFs cover every guest on the day's uploaded lists, so only the date and meal filters apply to them.
+  const pdfMeals = meal === 'all' ? MEALS : [meal]
+  const pdfName = (kind: string) => `meal-${kind}-${day}${meal === 'all' ? '' : `-${meal}`}.pdf`
 
   return (
     <section className="screen">
@@ -49,9 +49,10 @@ export function LogScreen() {
           <option value="all">All results</option>
           {RESULTS.map(r => <option key={r} value={r}>{RESULT_LABEL[r]}</option>)}
         </select>
-        <button className="push-right" onClick={exportReport}>
-          Export to PDF
+        <button className="push-right" onClick={() => downloadSummaryPdf(day, pdfMeals, pdfName('summary'))}>
+          Summary PDF
         </button>
+        <button onClick={() => downloadPdf(day, pdfMeals, pdfName('log'))}>Full report PDF</button>
       </div>
 
       <p className="summary">

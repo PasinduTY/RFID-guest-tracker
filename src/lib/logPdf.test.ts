@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Guest, GuestList, Scan } from './db'
-import { buildLogPdf } from './logPdf'
+import { buildLogPdf, buildSummaryPdf, mealStats } from './logPdf'
 
 const list: GuestList = {
   id: 1,
@@ -78,5 +78,44 @@ describe('buildLogPdf', () => {
     const doc = buildLogPdf({ day: '2026-11-09', sections: [{ meal: 'breakfast', list, guests: many }], scans: [] })
     expect(doc.getNumberOfPages()).toBeGreaterThan(1)
     expect(pdfText(doc)).toContain('GUEST, Number 119')
+  })
+})
+
+describe('summary', () => {
+  const scans = [
+    scan(1, '2026105521', 'breakfast', 'granted', 10),
+    scan(2, '2026105521', 'breakfast', 'repeat', 30),
+    scan(3, '2026199999', 'breakfast', 'denied', 31),
+    scan(4, '2026105519', 'breakfast', 'granted', 40),
+    scan(5, '2026105600', 'dinner', 'granted', 5),
+  ]
+
+  it('counts guests who took and missed each meal', () => {
+    const breakfast = mealStats({ meal: 'breakfast', list, guests }, scans)
+    expect(breakfast).toMatchObject({ guests: 3, tookMeal: 2, repeats: 1, occupants: 3, occupantsTookMeal: 2 })
+    expect(breakfast.notOnList).toHaveLength(1)
+    expect(breakfast.firstScan).toBe(scans[0].scannedAt)
+    expect(breakfast.lastScan).toBe(scans[3].scannedAt)
+
+    const dinner = mealStats({ meal: 'dinner', list, guests: dinnerGuests }, scans)
+    expect(dinner).toMatchObject({ guests: 2, tookMeal: 1, repeats: 0 })
+  })
+
+  it('fits on one page with a column per meal', () => {
+    const doc = buildSummaryPdf({
+      day: '2026-11-09',
+      sections: [
+        { meal: 'breakfast', list, guests },
+        { meal: 'dinner', list: null, guests: [] },
+      ],
+      scans,
+    })
+    const text = pdfText(doc)
+    expect(doc.getNumberOfPages()).toBe(1)
+    expect(text).toContain('Meal Summary')
+    expect(text).toContain('No. of guests who took the meal')
+    expect(text).toContain("No. of guests who didn't take the meal")
+    expect(text).toContain('67%')
+    expect(text).toContain('No list loaded')
   })
 })

@@ -30,46 +30,23 @@ interface GuestStatus {
   repeats: number
 }
 
-/**
- * A4 report laid out like the uploaded Rex list (Rez #, Unit #, Client Name, Occ(s), Qty) with a
- * column saying when each guest was let in, or that they weren't scanned. Scans of tags that
- * aren't on the meal's list follow in a second table.
- */
-export function buildLogPdf({ day, sections, scans, exportedAt = new Date() }: LogPdfInput): jsPDF {
-  const doc = new jsPDF({ unit: 'mm', format: 'a4' })
-  const property = sections.find(s => s.list?.property)?.list?.property || 'Meal access'
-
-  sections.forEach((section, i) => {
-    if (i > 0) doc.addPage()
-    drawSection(doc, section, day, property, scans, exportedAt)
-  })
-
-  // Footer on every page.
-  const { width, height } = doc.internal.pageSize
-  const pages = doc.getNumberOfPages()
-  doc.setFont('helvetica', 'normal').setFontSize(8).setTextColor(120)
-  for (let p = 1; p <= pages; p++) {
-    doc.setPage(p)
-    doc.text(`${property} · ${formatDay(day)}`, LEFT, height - 8)
-    doc.text(`Page ${p} of ${pages}`, width - LEFT, height - 8, { align: 'right' })
-  }
-  return doc
+/** What happened at one meal, measured against that meal's uploaded list. */
+export interface MealStats {
+  /** Per Rez #: when the guest was first let in, and how many repeat scans followed. */
+  status: Map<string, GuestStatus>
+  /** Scans of tags that aren't on the list. */
+  notOnList: Scan[]
+  guests: number
+  occupants: number
+  /** Guests let in at least once. */
+  tookMeal: number
+  occupantsTookMeal: number
+  repeats: number
+  firstScan: string | null
+  lastScan: string | null
 }
 
-const LEFT = 14
-
-function drawSection(
-  doc: jsPDF,
-  { meal, list, guests }: LogPdfSection,
-  day: string,
-  property: string,
-  scans: Scan[],
-  exportedAt: Date,
-) {
-  const { width, height } = doc.internal.pageSize
-  const top = 16
-  const label = MEAL_LABEL[meal]
-
+export function mealStats({ meal, guests }: LogPdfSection, scans: Scan[]): MealStats {
   const mealScans = scans.filter(s => s.meal === meal)
   const onList = new Set(guests.map(g => g.rezNo))
   const status = new Map<string, GuestStatus>()
@@ -80,20 +57,134 @@ function drawSection(
     else st.repeats++
     status.set(s.rezNo, st)
   }
-  const notOnList = mealScans.filter(s => s.result === 'denied' || !onList.has(s.rezNo))
-  const scanned = guests.filter(g => status.get(g.rezNo)?.first).length
-  const repeats = guests.reduce((n, g) => n + (status.get(g.rezNo)?.repeats ?? 0), 0)
+  const took = guests.filter(g => status.get(g.rezNo)?.first)
+  const times = mealScans.map(s => s.scannedAt).sort()
+  return {
+    status,
+    notOnList: mealScans.filter(s => s.result === 'denied' || !onList.has(s.rezNo)),
+    guests: guests.length,
+    occupants: guests.reduce((n, g) => n + (g.occupants ?? 0), 0),
+    tookMeal: took.length,
+    occupantsTookMeal: took.reduce((n, g) => n + (g.occupants ?? 0), 0),
+    repeats: guests.reduce((n, g) => n + (status.get(g.rezNo)?.repeats ?? 0), 0),
+    firstScan: times[0] ?? null,
+    lastScan: times.at(-1) ?? null,
+  }
+}
 
-  // Title block, as on the Rex report.
+/**
+ * A4 report laid out like the uploaded Rex list (Rez #, Unit #, Client Name, Occ(s), Qty) with a
+ * column saying when each guest was let in, or that they weren't scanned. Scans of tags that
+ * aren't on the meal's list follow in a second table.
+ */
+export function buildLogPdf({ day, sections, scans, exportedAt = new Date() }: LogPdfInput): jsPDF {
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' })
+  const property = propertyOf(sections)
+
+  sections.forEach((section, i) => {
+    if (i > 0) doc.addPage()
+    drawSection(doc, section, day, property, scans, exportedAt)
+  })
+  drawFooters(doc, property, day)
+  return doc
+}
+
+/** One-page overview: per meal, how many guests were on the list, took the meal, and didn't. */
+export function buildSummaryPdf({ day, sections, scans, exportedAt = new Date() }: LogPdfInput): jsPDF {
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' })
+  const property = propertyOf(sections)
+  const top = drawTitle(doc, property, 'Meal Summary', day, exportedAt)
+
+  const stats = sections.map(s => mealStats(s, scans))
+  const percent = (n: number, of: number) => (of ? `${Math.round((n / of) * 100)}%` : '-')
+  const time = (iso: string | null) => (iso ? localTime(iso) : '-')
+  const hasList = (i: number) => !!sections[i].list
+  // Counts against a list mean nothing for a meal that had no list, so those show "-".
+  const row = (label: string, value: (st: MealStats, i: number) => string | number, needsList = true) => [
+    label,
+    ...stats.map((st, i) => (needsList && !hasList(i) ? '-' : value(st, i))),
+  ]
+
+  autoTable(doc, {
+    startY: top + 4,
+    head: [['', ...sections.map(s => MEAL_LABEL[s.meal])]],
+    body: [
+      row('No. of guests', (st, i) => (hasList(i) ? st.guests : 'No list loaded'), false),
+      row('No. of guests who took the meal', st => st.tookMeal),
+      row("No. of guests who didn't take the meal", st => st.guests - st.tookMeal),
+      row('Attendance', st => percent(st.tookMeal, st.guests)),
+      row('No. of occupants', st => st.occupants),
+      row('Occupants who took the meal', st => st.occupantsTookMeal),
+      row('Repeat scans', st => st.repeats),
+      row('Scans not on the list (denied)', st => st.notOnList.length, false),
+      row('First scan', st => time(st.firstScan), false),
+      row('Last scan', st => time(st.lastScan), false),
+      row('Guest list', (_, i) => sections[i].list?.fileName ?? '-'),
+    ],
+    theme: 'grid',
+    styles: { font: 'helvetica', fontSize: 11, cellPadding: 3, textColor: 20 },
+    headStyles: { fillColor: [31, 111, 74], fontSize: 12 },
+    columnStyles: { 0: { fontStyle: 'bold', cellWidth: 80 } },
+    margin: { left: LEFT, right: LEFT, bottom: 16 },
+    didParseCell: cell => {
+      if (cell.section !== 'body' || cell.column.index === 0) return
+      // The three headline rows stand out.
+      if (cell.row.index <= 2) cell.cell.styles.fontSize = 14
+      if (cell.row.index === 1) cell.cell.styles.textColor = GREEN
+      if (cell.row.index === 2) cell.cell.styles.textColor = AMBER
+    },
+  })
+
+  drawFooters(doc, property, day)
+  return doc
+}
+
+const LEFT = 14
+
+const propertyOf = (sections: LogPdfSection[]) => sections.find(s => s.list?.property)?.list?.property || 'Meal access'
+
+/** Title block, as on the Rex report. Returns the y just below it. */
+function drawTitle(doc: jsPDF, property: string, title: string, day: string, exportedAt: Date): number {
+  const { width } = doc.internal.pageSize
+  const top = 16
   doc.setFont('helvetica', 'bold').setFontSize(14).setTextColor(20)
   doc.text(property, LEFT, top)
   doc.setFont('helvetica', 'normal').setFontSize(11)
-  doc.text(`${label} Attendance Report - Scan Results`, LEFT, top + 6)
+  doc.text(title, LEFT, top + 6)
   doc.text(`For: ${formatDay(day)}`, LEFT, top + 12)
   doc.setFontSize(9).setTextColor(90)
   doc.text(`Exported ${formatDay(localDate(exportedAt))} ${localTime(exportedAt.toISOString())}`, width - LEFT, top, {
     align: 'right',
   })
+  return top + 12
+}
+
+function drawFooters(doc: jsPDF, property: string, day: string) {
+  const { width, height } = doc.internal.pageSize
+  const pages = doc.getNumberOfPages()
+  doc.setFont('helvetica', 'normal').setFontSize(8).setTextColor(120)
+  for (let p = 1; p <= pages; p++) {
+    doc.setPage(p)
+    doc.text(`${property} · ${formatDay(day)}`, LEFT, height - 8)
+    doc.text(`Page ${p} of ${pages}`, width - LEFT, height - 8, { align: 'right' })
+  }
+}
+
+function drawSection(
+  doc: jsPDF,
+  section: LogPdfSection,
+  day: string,
+  property: string,
+  scans: Scan[],
+  exportedAt: Date,
+) {
+  const { meal, list, guests } = section
+  const { height } = doc.internal.pageSize
+  const label = MEAL_LABEL[meal]
+  const { status, notOnList, tookMeal: scanned, repeats } = mealStats(section, scans)
+
+  const top = drawTitle(doc, property, `${label} Attendance Report - Scan Results`, day, exportedAt) - 12
+  doc.setFontSize(9).setTextColor(90)
   const source = list
     ? [`${label} list: ${list.fileName}`, list.generatedAt && `generated ${list.generatedAt}`].filter(Boolean).join('  ·  ')
     : `No ${label.toLowerCase()} list was loaded for this day.`
