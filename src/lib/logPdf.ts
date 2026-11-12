@@ -80,14 +80,48 @@ export function mealStats({ meal, guests }: LogPdfSection, scans: Scan[]): MealS
 export function buildLogPdf({ day, sections, scans, exportedAt = new Date() }: LogPdfInput): jsPDF {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
   const property = propertyOf(sections)
+  const meals = sections.map(s => MEAL_LABEL[s.meal]).join(' and ')
+  const title = `${meals} Attendance Report - Scan Results`
+  const combined = sections.length > 1
 
+  const titleBottom = drawTitle(doc, property, title, day, exportedAt)
+  if (!combined) {
+    drawSection(doc, sections[0], titleBottom + 5, scans, false)
+    drawFooters(doc, property, day)
+    return doc
+  }
+
+  // Several meals: page 1 says so and lists where each meal starts, each meal opens with its own
+  // heading, and every page's header and footer name the meal it belongs to.
+  const contentsY = titleBottom + 7
+  const startPage: number[] = []
   sections.forEach((section, i) => {
     if (i > 0) doc.addPage()
-    drawSection(doc, section, day, property, scans, exportedAt)
+    startPage.push(doc.getNumberOfPages())
+    drawSection(doc, section, i === 0 ? contentsY + 12 : RUNNING_HEADER_Y + 12, scans, true)
   })
-  drawFooters(doc, property, day)
+
+  doc.setPage(1)
+  doc.setFont('helvetica', 'bold').setFontSize(10).setTextColor(20)
+  const contents = sections.map((s, i) => `${MEAL_LABEL[s.meal]} (page ${startPage[i]})`).join('  ·  ')
+  doc.text(`This report covers ${sections.length} meals: ${contents}`, LEFT, contentsY)
+
+  const mealOfPage = (p: number) => sections[startPage.findLastIndex(start => start <= p)].meal
+  const { width } = doc.internal.pageSize
+  for (let p = 2; p <= doc.getNumberOfPages(); p++) {
+    doc.setPage(p)
+    doc.setFont('helvetica', 'normal').setFontSize(8).setTextColor(120)
+    doc.text(`${property} · ${title} · ${formatDay(day)}`, LEFT, RUNNING_HEADER_Y)
+    doc.text(`${MEAL_LABEL[mealOfPage(p)]} section`, width - LEFT, RUNNING_HEADER_Y, { align: 'right' })
+  }
+  drawFooters(doc, property, day, p => `${MEAL_LABEL[mealOfPage(p)]} section`)
   return doc
 }
+
+/** Small header line on every page after the first of a multi-meal report. */
+const RUNNING_HEADER_Y = 10
+
+const MEAL_COLOR: Record<Meal, Rgb> = { breakfast: [140, 85, 8], dinner: [21, 79, 143] }
 
 /** One-page overview: per meal, how many guests were on the list, took the meal, and didn't. */
 export function buildSummaryPdf({ day, sections, scans, exportedAt = new Date() }: LogPdfInput): jsPDF {
@@ -159,47 +193,54 @@ function drawTitle(doc: jsPDF, property: string, title: string, day: string, exp
   return top + 12
 }
 
-function drawFooters(doc: jsPDF, property: string, day: string) {
+function drawFooters(doc: jsPDF, property: string, day: string, extra?: (page: number) => string) {
   const { width, height } = doc.internal.pageSize
   const pages = doc.getNumberOfPages()
   doc.setFont('helvetica', 'normal').setFontSize(8).setTextColor(120)
   for (let p = 1; p <= pages; p++) {
     doc.setPage(p)
-    doc.text(`${property} · ${formatDay(day)}`, LEFT, height - 8)
+    doc.text([property, formatDay(day), extra?.(p)].filter(Boolean).join(' · '), LEFT, height - 8)
     doc.text(`Page ${p} of ${pages}`, width - LEFT, height - 8, { align: 'right' })
   }
 }
 
-function drawSection(
-  doc: jsPDF,
-  section: LogPdfSection,
-  day: string,
-  property: string,
-  scans: Scan[],
-  exportedAt: Date,
-) {
+/**
+ * One meal's guest table, starting at `top`. With `heading`, it opens with the meal's name in
+ * large type (used when the report holds several meals).
+ */
+function drawSection(doc: jsPDF, section: LogPdfSection, top: number, scans: Scan[], heading: boolean) {
   const { meal, list, guests } = section
-  const { height } = doc.internal.pageSize
+  const { width, height } = doc.internal.pageSize
   const label = MEAL_LABEL[meal]
   const { status, notOnList, tookMeal: scanned, repeats } = mealStats(section, scans)
 
-  const top = drawTitle(doc, property, `${label} Attendance Report - Scan Results`, day, exportedAt) - 12
-  doc.setFontSize(9).setTextColor(90)
+  let y = top
+  if (heading) {
+    doc.setFont('helvetica', 'bold').setFontSize(16).setTextColor(...MEAL_COLOR[meal])
+    doc.text(label, LEFT, y)
+    doc.setDrawColor(...MEAL_COLOR[meal]).setLineWidth(0.6)
+    doc.line(LEFT, y + 2, width - LEFT, y + 2)
+    y += 8
+  }
+
+  doc.setFont('helvetica', 'normal').setFontSize(9).setTextColor(90)
   const source = list
     ? [`${label} list: ${list.fileName}`, list.generatedAt && `generated ${list.generatedAt}`].filter(Boolean).join('  ·  ')
     : `No ${label.toLowerCase()} list was loaded for this day.`
-  doc.text(source, LEFT, top + 17)
+  doc.text(source, LEFT, y)
 
   doc.setFontSize(10).setTextColor(20)
   doc.text(
     `${scanned} of ${guests.length} guests scanned · ${guests.length - scanned} not scanned · ${repeats} repeat scans · ${notOnList.length} not on list`,
     LEFT,
-    top + 24,
+    y + 7,
   )
 
   const statusCol = 5
+  // Pages this table runs onto keep clear of the running header.
+  const margin = { left: LEFT, right: LEFT, bottom: 16, top: heading ? RUNNING_HEADER_Y + 6 : 10 }
   autoTable(doc, {
-    startY: top + 27,
+    startY: y + 10,
     head: [['Rez #', 'Unit #', 'Client Name', 'Occ(s)', 'Qty', label]],
     body: guests.map(g => {
       const st = status.get(g.rezNo)
@@ -225,7 +266,7 @@ function drawSection(
     headStyles: { fillColor: [31, 111, 74] },
     footStyles: { fillColor: [235, 235, 230], textColor: 20 },
     columnStyles: { 3: { halign: 'center' }, 4: { halign: 'center' } },
-    margin: { left: LEFT, right: LEFT, bottom: 16 },
+    margin,
     didParseCell: cell => {
       if (cell.section !== 'body' || cell.column.index !== statusCol) return
       const st = status.get(guests[cell.row.index].rezNo)
@@ -235,21 +276,21 @@ function drawSection(
   })
 
   if (notOnList.length) {
-    let y = docY(doc) + 10
-    if (y > height - 40) {
+    let deniedY = docY(doc) + 10
+    if (deniedY > height - 40) {
       doc.addPage()
-      y = 20
+      deniedY = 22
     }
     doc.setFont('helvetica', 'bold').setFontSize(11).setTextColor(20)
-    doc.text(`Scans not on the ${label.toLowerCase()} list`, LEFT, y)
+    doc.text(`Scans not on the ${label.toLowerCase()} list`, LEFT, deniedY)
     autoTable(doc, {
-      startY: y + 2,
+      startY: deniedY + 2,
       head: [['Time', 'Scanned Unit #', 'Result']],
       body: notOnList.map(s => [localTime(s.scannedAt), s.raw.trim(), RESULT_LABEL[s.result]]),
       theme: 'striped',
       styles: { font: 'helvetica', fontSize: 9, cellPadding: 1.6, textColor: 20 },
       headStyles: { fillColor: [157, 37, 34] },
-      margin: { left: LEFT, right: LEFT, bottom: 16 },
+      margin,
     })
   }
 }

@@ -50,8 +50,10 @@ describe('buildLogPdf', () => {
 
     expect(doc.getNumberOfPages()).toBe(2)
     for (const g of [...guests, ...dinnerGuests]) expect(text).toContain(g.clientName)
-    expect(text).toContain('Breakfast Attendance Report')
-    expect(text).toContain('Dinner Attendance Report')
+    // The top of page 1 makes clear both meals are inside, and where each starts.
+    expect(text).toContain('Breakfast and Dinner Attendance Report')
+    expect(text).toContain('This report covers 2 meals: Breakfast \\(page 1\\)  ·  Dinner \\(page 2\\)')
+    expect(text).toContain('Dinner section')
     expect(text).toContain('Dinner list: dinner.xlsx')
     expect(text).toContain('+1 repeat') // PDF escapes the brackets around it
     expect(text).toContain('Not scanned')
@@ -64,7 +66,9 @@ describe('buildLogPdf', () => {
   it('shows only the chosen meal', () => {
     const text = pdfText(buildLogPdf({ day: '2026-11-09', sections: [{ meal: 'dinner', list, guests: dinnerGuests }], scans: [] }))
     expect(text).toContain('0 of 2 guests scanned')
+    expect(text).toContain('Dinner Attendance Report')
     expect(text).not.toContain('Breakfast')
+    expect(text).not.toContain('This report covers')
     expect(text).not.toContain('Scans not on the')
   })
 
