@@ -329,12 +329,70 @@ td.mono { font-size: 13px; }
 }
 
 /* Log */
-.filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-.push-right { margin-left: auto; }
-.summary { margin: 0; display: flex; gap: 24px; flex-wrap: wrap; color: var(--muted); }
-.summary strong { color: var(--text); font-weight: 500; }
-.folder {
-  display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
-  padding: 12px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+.page-head.with-actions { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+.page-head.with-actions > div:first-child { flex: 1; min-width: 240px; }
+.head-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.dot.granted { background: var(--success-dot); }
+.dot.repeat { background: var(--warning-dot); }
+.dot.denied { background: var(--danger-dot); }
+.pill { display: inline-flex; align-items: center; gap: 6px; font-weight: 500; }
+.small-note { font-size: 12px; }
+
+.filters { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.select-with-icon {
+  display: inline-flex; align-items: center; gap: 8px; padding: 0 4px 0 12px; color: var(--muted);
+  background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius);
 }
-.folder button { margin-left: auto; }
+.select-with-icon select { border: 0; padding-left: 0; background: transparent; font-weight: 500; }
+.select-with-icon:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.select-with-icon select:focus-visible { outline: none; }
+.segmented button.on.breakfast { color: var(--breakfast); }
+.segmented button.on.dinner { color: var(--dinner); }
+
+.meal-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.meal-stat {
+  display: flex; flex-direction: column; gap: 10px; padding: 18px 20px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+}
+.meal-stat-head { display: flex; align-items: center; gap: 12px; }
+.meal-stat-title { flex: 1; font-size: 16px; font-weight: 600; }
+.meal-stat-percent { font-size: 13px; font-weight: 500; color: var(--muted); }
+.meal-stat-main { display: flex; align-items: baseline; gap: 8px; font-size: 14px; }
+.meal-stat-value { font-size: 30px; font-weight: 600; letter-spacing: -0.02em; line-height: 1; }
+.meal-stat .progress { margin: 0; }
+.breakfast .progress > div { background: var(--breakfast); }
+.dinner .progress > div { background: var(--dinner); }
+.meal-stat-foot { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+.meal-stat-foot > span { display: inline-flex; align-items: center; gap: 6px; }
+
+.log-list { display: flex; flex-direction: column; gap: 10px; }
+.log-list-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { padding: 5px 12px; border-radius: 99px; font-size: 13px; border-color: var(--border); color: var(--muted); }
+.chip.on { background: var(--text); border-color: var(--text); color: var(--bg); }
+.chip.on:hover:not(:disabled) { background: var(--text); }
+.chip-count { font-weight: 400; opacity: 0.7; }
+.empty-table-row td { padding: 28px 14px; text-align: center; color: var(--faint); }
+tbody tr.empty-table-row:hover td { background: none; }
+
+.folder {
+  display: flex; gap: 14px; align-items: center; flex-wrap: wrap;
+  padding: 14px 18px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+}
+.folder-icon {
+  width: 40px; height: 40px; border-radius: var(--radius); display: grid; place-items: center;
+  background: var(--surface-2); color: var(--muted);
+}
+.folder.granted .folder-icon { background: var(--success-bg); color: var(--success-text); }
+.folder.prompt .folder-icon, .folder.denied .folder-icon { background: var(--warning-bg); color: var(--warning-text); }
+.folder-text { flex: 1; min-width: 220px; display: flex; flex-direction: column; font-size: 14px; }
+
+@media (max-width: 640px) {
+  .head-actions, .head-actions button { flex: 1; }
+  .filters .segmented { width: 100%; }
+  .filters .segmented button { flex: 1; padding: 6px 8px; }
+  .select-with-icon { width: 100%; }
+  .select-with-icon select { flex: 1; }
+}
