@@ -1,4 +1,11 @@
 import { useLiveQuery } from "dexie-react-hooks";
+import {
+  ListChecks,
+  ScanLine,
+  Upload,
+  Utensils,
+  type LucideIcon,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { UpdateBanner } from "./components/UpdateBanner";
 import { localDate } from "./lib/dates";
@@ -15,10 +22,10 @@ import { LogScreen } from "./screens/LogScreen";
 import { ScanScreen } from "./screens/ScanScreen";
 
 type Screen = "import" | "scan" | "log";
-const SCREENS: [Screen, string][] = [
-  ["import", "Import"],
-  ["scan", "Scan"],
-  ["log", "Log"],
+const SCREENS: [Screen, string, LucideIcon][] = [
+  ["import", "Import", Upload],
+  ["scan", "Scan", ScanLine],
+  ["log", "Log", ListChecks],
 ];
 
 export default function App() {
@@ -52,21 +59,24 @@ export default function App() {
       <header className="topbar">
         <span className="brand">
           <span className="brand-mark" aria-hidden="true">
-            ●
-          </span>{" "}
-          Meal access
+            <Utensils size={16} />
+          </span>
+          <span className="brand-name">Meal access</span>
           {activeList?.property && (
             <span className="brand-sub">{activeList.property}</span>
           )}
         </span>
-        <nav className="tabs">
-          {SCREENS.map(([id, label]) => (
+        <nav className="segmented tabs">
+          {SCREENS.map(([id, label, Icon]) => (
             <button
               key={id}
-              className={current === id ? "tab on" : "tab"}
+              className={current === id ? "on" : ""}
+              aria-current={current === id ? "page" : undefined}
+              aria-label={label}
               onClick={() => setScreen(id)}
             >
-              {label}
+              <Icon size={16} aria-hidden="true" />
+              <span className="tab-label">{label}</span>
             </button>
           ))}
         </nav>

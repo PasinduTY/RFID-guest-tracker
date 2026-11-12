@@ -22,7 +22,8 @@ export default defineConfig({
         theme_color: '#1f6f4a',
         icons: [{ src: 'icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' }],
       },
-      workbox: { globPatterns: ['**/*.{js,css,html,svg}'] },
+      // woff2: the bundled Inter font, so it also shows offline.
+      workbox: { globPatterns: ['**/*.{js,css,html,svg,woff2}'] },
     }),
   ],
 })
